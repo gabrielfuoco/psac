@@ -1,0 +1,570 @@
+<apex:page standardController="Fluxo__c" extensions="MatrizParametrizacaoController">
+    <apex:includeScript value="{! $Resource.jQuery }"></apex:includeScript>
+    <apex:includeScript value="{! $Resource.jQueryUi }"></apex:includeScript>
+    <apex:stylesheet value="{! $Resource.jQueryUiCssStructure}"/>
+    <apex:stylesheet value="{! $Resource.jQueryUiCss}"/>
+    <script src="../../soap/ajax/36.0/connection.js" type="text/javascript">
+    </script>
+    <style type="text/css">
+        .empty-column-content {
+            display: none;
+        }
+        .tbody tr td{
+          max-width:200px; /* Customise it accordingly */
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+    </style>
+    <script src="../../soap/ajax/36.0/connection.js" type="text/javascript">
+    </script>
+  <!-- Page Header -->
+  <apex:sectionHeader title="Fluxo" subtitle="Editar Matriz"/>
+  <apex:form id="frm1">
+    <apex:pageBlock title="Matriz" mode="edit" id="block1">
+        <apex:pageBlockSection columns="2" showHeader="true" title="Informações"  >
+            <apex:pageBlockSectionItem >
+                   <apex:outputLabel >Fluxo</apex:outputLabel>
+                   <input type = 'text' readonly = 'readonly' value='{!fluxo.name}' style='width:50%'/>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+                   <apex:outputLabel >Situação</apex:outputLabel>
+                   <input type = 'text' readonly = 'readonly' value='{!fluxo.Versao__r.Situacao__c}' style='width:50%'/>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+                   <apex:outputLabel >Versão</apex:outputLabel>
+                   <input type = 'text' readonly = 'readonly' value='{!fluxo.Versao__r.Versao__c}' style='width:50%'/>
+            </apex:pageBlockSectionItem>
+        </apex:pageBlockSection>
+        <apex:pageBlockSection columns="1" showHeader="true" title="Dados da Matriz"  >
+            <apex:inputHidden value="{!fluxo.id}" />
+            <apex:outputPanel layout="block" style="overflow:auto">
+                <apex:pageBlockTable value="{!linhasColunas}" var="linhaColuna">
+                    <apex:column headerValue="Ações" styleClass="empty-column-content" />
+                    <apex:repeat value="{!headers}" var="header">
+                        <apex:column value="{!header}" headerValue="{!header}" styleClass="empty-column-content" />
+                    </apex:repeat> 
+                    <apex:repeat value="{!linhaColuna.Columns}" var="colunaValor">
+                        <apex:column styleClass="actionColumn"  title="Ações" headerValue="Ações" rendered="{!IF(colunaValor.Nome == 'ID',true, false) }" >
+                            <apex:commandLink rendered="{! edicao}" onclick="return ExcluirLinha();" styleClass="actionLink" value="Excluir" action="{!excluirComponente}">
+                            	<apex:param name="{!colunaValor.valor}" value="{!colunaValor.valor}" assignTo="{!linhaAcao}"/> 
+                            </apex:commandLink> |
+                            <a style='cursor:pointer;' class="actionLink" onclick='AbrirLinhaPara{! edicao}("{!colunaValor.valor}"); return false;'> Editar </a>
+                            <input type = 'hidden' name = 'idLinha' value = '{!colunaValor.valor}'/> |&nbsp;
+                            <apex:commandLink styleClass="actionLink" value="Traduções" onclick="window.open('/{!colunaValor.valor}')"/>
+
+                        </apex:column>
+                    </apex:repeat>
+                    <apex:repeat value="{!linhaColuna.Columns}" var="colunaValor" >
+                        <apex:column headerValue="{!colunaValor.Nome}" rendered="{!IF(colunaValor.Id == 'SEMID' && colunaValor.Nome != 'ID',true, false) }">
+                            <div name = '{!colunaValor.Nome}'>
+                            	{!colunaValor.valor}
+                            </div>
+                            &nbsp;
+                        </apex:column>
+                    </apex:repeat>
+                    <apex:repeat value="{!linhaColuna.Columns}" var="colunaValor" >
+                        <apex:column styleClass="dataCol" headerValue="{!colunaValor.Nome}" rendered="{!IF(colunaValor.Id != 'SEMID' && colunaValor.Nome != 'ID',true, false) }">
+                            <div class='clickableColunm clickableColunmResp' style='cursor:pointer;'>
+                                <input type = 'hidden' value  = '{!colunaValor.IdLinha}' name='idLinha'/>
+                                <input type = 'hidden' value  = '{!colunaValor.IdColuna}' name='idColuna'/>
+                                <div id='{!colunaValor.IdLinha}{!colunaValor.IdColuna}' name='conteudo'>
+                            		{!colunaValor.valor} 
+                                </div>
+                                &nbsp;
+                            </div>
+                        </apex:column>
+                    </apex:repeat>
+                </apex:pageBlockTable>
+            </apex:outputPanel>
+       </apex:pageBlockSection>
+        <div style='display:none'>
+            <div id='menor'></div>
+            <div id='maior'></div>
+        </div>
+      <script type="text/javascript">
+          sforce.connection.sessionId='{!GETSESSIONID()}';
+          	
+          var lst = new Array();
+          var lstCol = new Array();
+          var posAct = 0;
+		        
+          function Colunas(id, nome)
+          {
+              this.id = id;
+              this.nome = nome;
+          }
+          
+          function ValorMatriz(idColuna, idLinha, valor)
+          {
+              this.idColuna = idColuna;
+              this.idLinha = idLinha;
+              this.valor = valor;
+          }
+        
+        String.prototype.replaceAll = function(de, para){
+            var str = this;
+            var pos = str.indexOf(de);   
+             while (pos > -1){
+                str = str.replace(de, para);
+                pos = str.indexOf(de);
+             }
+            
+             return (str);
+        }
+        
+         function ExcluirLinha()
+         {
+         	return confirm("Deseja realmente excluir o registro?");
+         }
+        
+         $(document).ready(function(){
+             $("#menor").html('<');
+             $("#maior").html('>');
+                 
+             $( ".clickableColunmResp" ).click(function() {
+                 var linha = $(this).parent().find('input[name=idLinha]').val().trim();
+                 var coluna = $(this).parent().find('input[name=idColuna]').val().trim();
+                 
+                 var conteudo = $(this).find('div[name=conteudo]').html().trim().replaceAll($("#menor").html(), '<').replaceAll($('#maior').html(),'>');
+
+                 $("#hiddenLinha").val(linha);
+                 $("#hiddenColuna").val(coluna);
+                 
+                 $("#paramEquip").val($($( $(this).parent().parent() ).find('div[name="Equipamento"]')[0]).html().trim());
+                 $("#paramComp").val($($( $(this).parent().parent() ).find('div[name="Componente/Peça"]')[0]).html().trim());
+  
+                 $("#paramPer").val(getParamNameByid(coluna));
+                 $("#conteudoResposta").val(conteudo);
+                 
+                 $( ".tarjaVermelha" ).each(function( i ) {
+                    var e = $('<div class = "requiredInput"><div class = "requiredBlock"></div> </div>');
+                    e.append($(this).clone());
+                    $(this).before(e);
+                    $(this).remove();
+                  });
+                 
+                 AbrirModalResposta();
+             });
+             
+             $( ".clickableColunm" ).mouseover(function() {
+                 $(this).removeClass( "inlineEditWrite" );
+              	$(this).addClass( "inlineEditWriteOn" );
+            });
+             
+            $( ".clickableColunm" ).mouseout(function() {
+                 $(this).removeClass( "inlineEditWriteOn" );
+              	 $(this).addClass( "inlineEditWrite" );
+            });
+             
+          	 <apex:repeat value="{!fluxoResp.Colunas}" var="coluna">
+        		lstCol[posAct] = new Colunas('{!coluna.id}','{!coluna.parametro__r.name}');
+                posAct++;
+        	 </apex:repeat>
+             posAct = 0;
+             <apex:repeat value="{!fluxoResp.Respostas}" var="resp">
+        		lst[posAct] = new ValorMatriz('{!resp.MatrizColuna__r.id}','{!resp.MatrizLinha__r.id}', '');
+                posAct++;
+        	 </apex:repeat>
+             
+          });
+		
+        
+		function getValueByid(linha, coluna)
+		{
+            for(var i = 0; i< lst.length; i++)
+            {
+                if(lst[i].idColuna === coluna && lst[i].idLinha === linha  )
+                    return lst[i].valor;
+            }
+        }
+        
+        function getParamNameByid(coluna)
+        {
+            for(var i = 0; i< lstCol.length; i++)
+            {
+                if(lstCol[i].id === coluna)
+                    return lstCol[i].nome;
+            }
+        }
+        
+      </script>
+      <apex:pageBlockButtons location="top">
+        <apex:commandButton value="+ Componentes" onclick="AbrirModalParod(); return false;" rendered="{! edicao}" />
+        <apex:commandButton value="+ Parâmetros" onclick="AbrirModalParametro(); return false;" rendered="{! edicao}"/>
+        <apex:commandButton action="{!cancel}" value="Cancelar" immediate="true" />
+      </apex:pageBlockButtons>
+    </apex:pageBlock>    
+  </apex:form>
+  <apex:outputPanel style="display:none" id="modalJqueryProduto">
+  	<apex:form id="form2">
+       <apex:pageBlock title="Adicionar Componentes" mode="edit" id="block2">
+           <apex:inputHidden value="{!fluxo.id}" />
+           <apex:inputHidden id="idLinhaHidden" value="{!cadComponente.Linha.id}"/> 
+           <apex:pageBlockSection id="blqCompPeca" columns="1" showHeader="true" title="Informações do Componente / Peça">
+          	   <apex:inputField id="compPeca" value="{! cadComponente.Linha.ComponentePeca__c}" required="true"/>
+               <input type = 'hidden' id='tipoCompPeca'/>
+               <apex:inputField id="compPecaDesc" style="width:100%" value="{! cadComponente.Linha.DescricaoComponentePeca__c}" required="true"/>
+               <apex:inputField id="compQtde" style="width:100%" value="{! cadComponente.Linha.Quantidade__c}" required="true"/>
+           </apex:pageBlockSection>
+           <apex:pageBlockSection id="blqEquip" columns="1" showHeader="true" title="Informações do Equipamento">
+                 <apex:inputField id="equip" value="{! cadComponente.Linha.Equipamento__c}"/>
+                 <apex:inputField id="equipDesc" style="width:100%" value="{! cadComponente.Linha.DescricaoEquipamento__c}"/>
+          </apex:pageBlockSection>
+          <apex:pageBlockButtons location="bottom" style="padding-left:100px;" >
+             <apex:commandButton action="{!salvarComponentes}" rendered="{! edicao}" onclick="return SalvarComponentePeca()" title="Salvar" value="Salvar"/>
+             <input type = "button" value= "Cancelar" class="btn" onClick = "$(dialogProdId).dialog( 'close')"/>
+          </apex:pageBlockButtons>
+           
+       <script type="text/javascript">
+           
+            function esconderLupa()
+            {
+                var equip = document.getElementById('{!$Component.blqEquip.equip}'); 
+                
+                if($("#tipoCompPeca").val() === 'Peça')
+                {
+                    var eOrig = $(equip).parent().find('a').css("display","none");
+                }
+                else
+				{
+                	var eOrig = $(equip).parent().find('a').css("display","");
+                }
+            }
+           
+           function AbrirLinhaPara{! edicao}(idLinha)
+           {
+               var id = document.getElementById('{!$Component.idLinhaHidden}');   
+               var nome = document.getElementById('{!$Component.blqCompPeca.compPeca}');
+               var compQtde = document.getElementById('{!$Component.blqCompPeca.compQtde}'); 
+               var compPecaDesc = document.getElementById('{!$Component.blqCompPeca.compPecaDesc}'); 
+               var equip = document.getElementById('{!$Component.blqEquip.equip}'); 
+               var equipDesc = document.getElementById('{!$Component.blqEquip.equipDesc}'); 
+               
+               var qry = "Select m.Id, m.DescricaoEquipamento__c, m.DescricaoComponentePeca__c, m.Quantidade__c , ComponentePeca__r.Name, ComponentePeca__r.RecordType.Name, Equipamento__r.Name from MatrizLinha__c m where m.id = '" + idLinha + "'";
+               
+               result = sforce.connection.query(qry);  	
+              
+               records = result.getArray("records"); 
+
+               if(records.length > 0)
+               {
+                   var record = records[0];
+                   
+                   $(id).val(record.Id);
+                   $(nome).val(record.ComponentePeca__r.Name);
+				   $(compPecaDesc).val(record.DescricaoComponentePeca__c);
+                   $(compQtde).val(record.Quantidade__c);
+
+                   if(record.Equipamento__r !== null)
+                   		$(equip).val(record.Equipamento__r.Name);
+                   
+                   $(equipDesc).val(record.DescricaoEquipamento__c);
+                   $("#tipoCompPeca").val(record.ComponentePeca__r.RecordType.Name);
+                   esconderLupa();
+                   if(record.ComponentePeca__r.RecordType.Name === 'Peça')
+                   {
+                   	   $(equip).attr('disabled','disabled');
+                       $(equipDesc).attr('disabled','disabled');
+                       $(equip).val('');
+                       $(equipDesc).val('');
+                   }
+                   else
+                   {
+                   	   $(equip).removeAttr('disabled','disabled');
+                       $(equipDesc).removeAttr('disabled','disabled');
+                   }
+               }
+               AbrirModal(dialogProdId, 800);
+           }
+           
+           function SalvarComponentePeca()
+           {
+               var mensagem = '';
+               var erro = false;
+               
+               if($(document.getElementById('{!$Component.blqCompPeca.compPeca}')).val() === '')
+               {
+                   mensagem = mensagem + '\n <p>* O campo Componente/Peça é obrigatório </p>';
+                   
+                   erro = true;
+               }
+               else
+               {
+                	result = sforce.connection.query("Select Id from Item__c where name = '" + $(document.getElementById('{!$Component.blqCompPeca.compPeca}')).val() + "'");  
+               	
+                	records = result.getArray("records"); 
+               
+               		if(records.length == 0)
+               		{
+                        mensagem = mensagem + '\n <p>* Componente/Peça não encontrado </p>';
+                   
+                   		erro = true;
+                    }
+               }    
+               
+               if($(document.getElementById('{!$Component.blqCompPeca.compPecaDesc}')).val() === '')
+               {
+                   mensagem = mensagem + '\n <p>* O campo Descrição Componente/Peça é obrigatório </p>';
+                   erro = true;
+               }
+               
+               if($(document.getElementById('{!$Component.blqCompPeca.compQtde}')).val() === '')
+               {
+                   mensagem = mensagem + '\n <p>* O campo Quantidade é obrigatório </p>';
+                   erro = true;
+               }
+               
+               if($("#tipoCompPeca").val() !== '' && !($("#tipoCompPeca").val() === 'Peça'))
+               {
+               	   if($(document.getElementById('{!$Component.blqEquip.equip}')).val() === '')
+                   {
+                       mensagem = mensagem + '\n <p>* O campo Equipamento é obrigatório para Componentes</p>';
+                       erro = true;
+                   }
+                   else
+                   {
+                       result = sforce.connection.query("Select Id from Item__c where name = '" + $(document.getElementById('{!$Component.blqEquip.equip}')).val() + "'");  
+               	
+                        records = result.getArray("records"); 
+                       
+                        if(records.length == 0)
+                        {
+                            mensagem = mensagem + '\n <p>* Equipamento não encontrado </p>';
+                       
+                            erro = true;
+                        }
+                   }
+                   
+                   if($(document.getElementById('{!$Component.blqEquip.equipDesc}')).val() === '')
+                   {
+                       mensagem = mensagem + '\n <p>* O campo Descrição Equipamento é obrigatório para Componentes</p>';
+                       erro = true;
+                   }
+               }
+               
+               if(erro)
+               {
+                   Alerta(mensagem);
+                   return false;
+               }
+           	   
+               return true;
+           }
+           
+           function LimparCampos()
+           {
+               $(document.getElementById('{!$Component.blqCompPeca.compPeca}')).val('');               
+               $(document.getElementById('{!$Component.blqCompPeca.compPecaDesc}')).val(''); 
+               $(document.getElementById('{!$Component.blqCompPeca.compQtde}')).val(''); 
+               $(document.getElementById('{!$Component.blqEquip.equip}')).val('');
+               $(document.getElementById('{!$Component.blqEquip.equipDesc}')).val(''); 
+               $(document.getElementById('{!$Component.idLinhaHidden}')).val(''); 
+           }
+           
+            $(document.getElementById('{!$Component.blqCompPeca.compPeca}')).change(function() {
+               var nome = $(document.getElementById('{!$Component.blqCompPeca.compPeca}')).val();               
+               var compPecaDesc = document.getElementById('{!$Component.blqCompPeca.compPecaDesc}'); 
+               var equip = document.getElementById('{!$Component.blqEquip.equip}'); 
+               var equipDesc = document.getElementById('{!$Component.blqEquip.equipDesc}'); 
+               
+               result = sforce.connection.query("Select Id, name, descricao__c, Equipamento__c, RecordType.Name from Item__c where name = '" + nome + "'");  	
+              
+               records = result.getArray("records"); 
+               
+               if(records.length > 0)
+               {
+                   var record = records[0];
+                   
+                   $(compPecaDesc).val(record.Descricao__c);
+                   $("#tipoCompPeca").val(record.RecordType.Name);
+                   
+                   esconderLupa();
+                   
+                   if( record.RecordType.Name === 'Peça')
+                   {
+                       
+                   	   $(equip).attr('disabled','disabled');
+                       $(equipDesc).attr('disabled','disabled');
+                       $(equip).val('');
+                       $(equipDesc).val('');
+                   }
+                   else
+                   {
+                   	   $(equip).removeAttr('disabled','disabled');
+                       $(equipDesc).removeAttr('disabled','disabled');
+                       
+                       var result1 = sforce.connection.query("Select id, Name, Descricao__c, Equipamento__c from Item__c where id = '" + record.Equipamento__c + "'");  	
+                       var records1 = result1.getArray("records"); 
+                       
+                       if(records1.length > 0)
+                       {
+                           $(equip).val(records1[0].Name);
+                           $(equipDesc).val(records1[0].Descricao__c);
+                       }
+                   } 
+               }
+            });
+           
+           $(document.getElementById('{!$Component.blqEquip.equip}')).change(function() {
+               
+               var nome = $(document.getElementById('{!$Component.blqEquip.equip}')).val(); 
+               var equipDesc = document.getElementById('{!$Component.blqEquip.equipDesc}'); 
+
+               result = sforce.connection.query("Select Id, name, descricao__c, Equipamento__c from Item__c where name = '" + nome + "'");  	
+              
+               records = result.getArray("records"); 
+               
+               if(records.length > 0)
+               {
+                   var record = records[0];
+                   $(equipDesc).val(record.Descricao__c);
+               }
+            });
+       </script>
+       </apex:pageBlock>
+	</apex:form>  
+  </apex:outputPanel>
+  <apex:outputPanel style="display:none" id="modalJquery">
+  	<apex:form id="myForm">
+       <apex:pageBlock title="Vincular Parâmetros" mode="edit">
+          <apex:pageBlockSection columns="1" showHeader="false" title="Informações">
+             <apex:pageBlockTable value="{!vincularParametros}" var="linha">
+                <input type="hidden" name = "linhas" value = "{!linha.parametro.id}" />
+                <apex:column headerValue="Adicionar">
+                   <apex:inputCheckbox value="{!linha.selecionado}"/>
+                </apex:column>
+                <apex:column value="{!linha.parametro.name}" headerValue="Nome"/>
+                <apex:column value="{!linha.parametro.Pergunta__c}" headerValue="Pergunta"/>
+             </apex:pageBlockTable>
+          </apex:pageBlockSection>
+          <apex:pageBlockButtons location="bottom" style="padding-left:100px;" >
+             <apex:commandButton action="{!salvarParametros}" title="Salvar" value="Salvar"/>
+             <input type = "button" value= "Cancelar" class="btn" onClick = "$(dialogId).dialog( 'close' )"/>
+          </apex:pageBlockButtons>
+       </apex:pageBlock>
+	</apex:form>  
+  </apex:outputPanel>
+    
+<apex:outputPanel style="display:none" id="modalResposta">
+  	<apex:form id="AlterarValorParametro">
+       <input type='hidden' id = 'hiddenLinha'/>
+       <input type='hidden' id = 'hiddenColuna'/>
+       <apex:pageBlock title="Adicionar Resposta" mode="edit">
+          <apex:pageBlockSection columns="1" showHeader="false" title="Informações">
+             <apex:pageBlockSectionItem >
+             	<apex:outputLabel >Equipamento</apex:outputLabel>
+                 <input type = 'text' id='paramEquip' readonly='readonly'/>
+             </apex:pageBlockSectionItem>
+             <apex:pageBlockSectionItem >
+                 <apex:outputLabel >Componente/Peça</apex:outputLabel>
+                 <input type = 'text' id='paramComp' readonly='readonly' />
+             </apex:pageBlockSectionItem>
+              <apex:pageBlockSectionItem >
+                    <apex:outputLabel >Parâmetro</apex:outputLabel>
+                  <input type = 'text' id='paramPer' readonly='readonly'/>
+             </apex:pageBlockSectionItem>
+             <apex:pageBlockSectionItem >
+             	<apex:outputLabel >Valor</apex:outputLabel>
+                <textarea id='conteudoResposta' rows="10" cols="75" class="tarjaVermelha" ></textarea> 
+             </apex:pageBlockSectionItem>
+          </apex:pageBlockSection>
+          <apex:pageBlockButtons location="bottom" style="padding-left:100px;" >
+             <apex:commandButton rendered="{! edicao}" action="{!salvarParametros}" title="Salvar" value="Salvar" onclick="return salvarResposta()"/>
+             <input type = "button" value= "Cancelar" class="btn" onClick = "$(dialogmodalRespostaId).dialog( 'close' )"/>
+          </apex:pageBlockButtons>
+       </apex:pageBlock>
+	</apex:form>  
+  </apex:outputPanel>
+    
+    <apex:outputPanel style="display:none" id="modalAlerta">
+        <apex:form >
+            <apex:pageBlock >
+                <apex:messages rendered="true" > 
+                    <div id="Mensagem">
+                    </div> 
+                </apex:messages>
+                <apex:pageBlockButtons location="bottom" >
+                    <input type = "button" value= "Fechar" class="btn" onClick = "$(dialogMsg).dialog( 'close' )"/>
+                </apex:pageBlockButtons>
+        	</apex:pageBlock>
+        </apex:form>
+  	</apex:outputPanel>
+    
+    <script type="text/javascript">
+    	var dialogMsg= document.getElementById('{!$Component.modalAlerta}');
+    	var dialogId= document.getElementById('{!$Component.modalJquery}');
+    	var dialogProdId= document.getElementById('{!$Component.modalJqueryProduto}');
+    	var dialogmodalRespostaId= document.getElementById('{!$Component.modalResposta}');
+    
+    	function AbrirModal(id, largura)
+    	{
+        	$(id).dialog({modal: true,
+                				width: largura,
+                                closeOnEscape: false,
+                                open: function(event, ui) { $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();}
+                               });
+            $(".ui-dialog-titlebar").hide();
+        }
+    
+    	function salvarResposta()
+    	{
+        	if($("#conteudoResposta").val().trim() === '')
+            {
+                Alerta('* Campo Valor é obrigatório');
+                return false;
+            }
+            
+            result = sforce.connection.query("Select Id, MatrizColuna__c, MatrizLinha__c, Resposta__c from MatrizResposta__c " +
+                                   "where MatrizColuna__r.id = '" + $("#hiddenColuna").val() + "' and MatrizLinha__r.id = '" + $("#hiddenLinha").val()  + "'");  	
+              
+            records = result.getArray("records"); 
+            
+            var matrizResp = new sforce.SObject("MatrizResposta__c"); 
+            matrizResp.MatrizColuna__c = $("#hiddenColuna").val();
+            matrizResp.MatrizLinha__c = $("#hiddenLinha").val();
+            matrizResp.Resposta__c = $("#conteudoResposta").val();
+            
+            if(records.length > 0)
+            {
+            	matrizResp.Id = records[0].Id;
+                
+                var res = sforce.connection.upsert("Id", [matrizResp]);
+            }
+            else
+            {
+                var res = sforce.connection.create([matrizResp]); 
+            }
+            
+            $("#" + $("#hiddenLinha").val() + $("#hiddenColuna").val()).val(Resposta__c);
+            
+            $(dialogmodalRespostaId).dialog( 'close' );
+            
+            return false;
+        }
+    
+    	function Alerta(mensagem)
+    	{
+            $("#Mensagem").html(mensagem);
+            
+            AbrirModal(dialogMsg, 350);
+        }
+    
+    	function AbrirModalParametro()
+        {	
+            AbrirModal(dialogId, 800);
+        }
+    
+    	function AbrirModalParod()
+        {	
+            LimparCampos();
+            AbrirModal(dialogProdId, 800);
+        }
+    	
+    	function AbrirModalResposta()
+        {	
+            AbrirModal(dialogmodalRespostaId, 800);
+        }
+    
+    </script>
+</apex:page>

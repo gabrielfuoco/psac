@@ -1,0 +1,74 @@
+<apex:page controller="ParametroAnexoController">
+  <apex:includeScript value="{! $Resource.jQuery }"/>
+  <apex:includeScript value="{! $Resource.maskmoney }"></apex:includeScript>
+  <script src="../../soap/ajax/36.0/connection.js" type="text/javascript">
+   </script>
+  <!-- Page Header -->
+  <apex:sectionHeader title="Anexar imagem" subtitle="Anexar imagem" />
+  <!-- Begin Form -->
+  <apex:form >
+      <apex:messages style="color:red"/> 
+    <apex:pageBlock title="Informações do parâmetro" mode="edit" id="myblock">
+      <!-- Fields -->
+      <apex:pageBlockSection columns="2" showHeader="true" title="Informações do parâmetro">
+        <apex:inputText value="{!parametro.name}" style="width:300px"  disabled="true"/>
+        <apex:pageBlockSectionItem />
+        <apex:inputText value="{!parametro.Pergunta__c}" style="width:300px"  disabled="true"/>
+        <apex:pageBlockSectionItem />
+        <apex:inputText value="{!parametro.OpcaoPadrao__c}" style="width:300px"  disabled="true"/>
+        <apex:pageBlockSectionItem />
+      </apex:pageBlockSection>
+       <script type="text/javascript">
+        	sforce.connection.sessionId='{!GETSESSIONID()}'
+            
+            function AtualizarExtensao(obj)
+            {
+                $($(obj).parent()).find(':hidden').val($(obj).val());
+                
+                var seq=0;
+                
+                $($(obj).parent()).find(':hidden').each(function( index ) {
+                    if(seq === 0)
+                    {
+                    	$(this).val($(obj).val());
+                        seq++;
+                    }
+                    else
+                    {
+                    	$(this).val($(obj).val().replace(/^.*[\\\/]/, ''));
+                    }
+                });
+            }
+        
+            function removerAnexo(id)
+            {
+        		var delResult = sforce.connection.deleteIds([id]);
+                
+                window.history.back();
+            }
+        </script>
+      <apex:pageBlockSection columns="1" showHeader="true" title="Opções da resposta"> 
+          <apex:pageBlockTable value="{!allFileList}" var="opt">
+              <apex:column headerValue="Sequência"><apex:outputLabel >{!opt.ParametroOpcao.Sequencia__c}</apex:outputLabel></apex:column>
+              <apex:column headerValue="Descrição"><apex:outputLabel >{!opt.ParametroOpcao.Name}</apex:outputLabel></apex:column>
+              <apex:column styleClass="actionColumn"  title="Nome" headerValue="Anexo" >
+                  <apex:outputLink rendered="{!opt.Anexo.id != null}" value="{!URLFOR($Action.Attachment.Download, opt.Anexo.id)}" styleClass="actionLink" target="_blank"  >{!opt.Anexo.name}</apex:outputLink>
+              </apex:column>              
+              <apex:column headerValue="Upload">
+                  <apex:inputfile accept="image/*"   value="{!opt.Anexo.body}" onchange="AtualizarExtensao(this);" /> <br/><br/>
+                  <apex:inputHidden value="{!opt.NomeCompletoImagem}"/>
+                  <apex:inputHidden value="{!opt.Nome}"/>
+              </apex:column>
+              <apex:column headerValue="Remover" >
+                  <apex:inputCheckbox value="{!opt.Remover}" rendered="{!opt.Anexo.id != null}" />
+              </apex:column>
+          </apex:pageBlockTable>
+      </apex:pageBlockSection>
+      <!-- Button Section -->
+      <apex:pageBlockButtons location="bottom">
+        <apex:commandButton value="Salvar" action="{!Salvar}" />
+        <apex:commandButton value="Cancelar" action="{!Cancel}" />
+      </apex:pageBlockButtons>
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>

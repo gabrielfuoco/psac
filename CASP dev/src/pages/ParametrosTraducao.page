@@ -1,0 +1,46 @@
+<apex:page standardController="TraducoesParametro__c" extensions="ParametrosTraducaoController">
+  <apex:includeScript value="{! $Resource.jQuery }"/>
+  <apex:includeScript value="{! $Resource.maskmoney }"></apex:includeScript>
+  <script src="../../soap/ajax/36.0/connection.js" type="text/javascript">
+   </script>
+  <!-- Page Header -->
+  <apex:sectionHeader title="Tradução do Parametro" subtitle="Nova tradução do Parâmetro" rendered="{!TraducoesParametro__c.Name == ''}" />
+  <apex:sectionHeader title="Tradução do Parametro" subtitle="Editar tradução do Parâmetro" rendered="{!TraducoesParametro__c.Name != ''}" />
+  <!-- Begin Form -->
+  <apex:form >
+    <apex:messages style="color:red"/> 
+    <apex:pageBlock title="Editar tradução do Parâmetro" mode="edit" id="myblock">
+      <!-- Fields -->
+      <apex:pageBlockSection columns="2" showHeader="true" title="Informações do parâmetro">
+        <apex:inputField value="{!TraducoesParametro__c.Parametro__c}" style="width:300px" required="true"/>
+        <apex:pageBlockSectionItem />
+        <apex:inputText value="{!parametro.Pergunta__c}" style="width:300px"  disabled="true"/>
+        <apex:pageBlockSectionItem />
+        <apex:inputText value="{!parametro.OpcaoPadrao__c}" style="width:300px"  disabled="true"/>
+        <apex:pageBlockSectionItem />
+      </apex:pageBlockSection>
+      <apex:pageBlockSection columns="2" showHeader="true" title="Informações da tradução">
+          <apex:inputField value="{!TraducoesParametro__c.Linguagem__c}" required="true" />
+          <apex:pageBlockSectionItem />
+          <apex:inputField value="{!TraducoesParametro__c.Name}" style="width:300px" required="true"/>
+          <apex:pageBlockSectionItem />
+          <apex:inputField value="{!TraducoesParametro__c.OpcaoPadrao__c}" id="pergunta" style="width:300px" rendered="{! !IsCheck}"/>
+          <apex:inputCheckbox value="{!TraducoesParametro__c.OpcaoPadrao__c}" style="width:300px" rendered="{! IsCheck}"/>
+      </apex:pageBlockSection>
+      <apex:pageBlockSection columns="1" showHeader="true" title="Opções da resposta" rendered="{!IsMultiplo}"> 
+
+          <apex:pageBlockTable value="{!opcoes}" var="opt">
+              <apex:column headerValue="Sequência"><apex:outputLabel >{!opt.ParametroOpcao.Sequencia__c}</apex:outputLabel></apex:column>
+              <apex:column headerValue="Descrição em português"><apex:outputLabel >{!opt.ParametroOpcao.Name}</apex:outputLabel></apex:column>
+              <apex:column headerValue="Tradução"><apex:inputField value="{!opt.traducaoParametroOpcao.Name}" required="true" id="nome" style="width:300px"/></apex:column>
+          </apex:pageBlockTable>
+            
+      </apex:pageBlockSection>
+      <!-- Button Section -->
+      <apex:pageBlockButtons location="bottom">
+        <apex:commandButton value="Salvar" action="{!Salvar}" />
+        <apex:commandButton value="Cancelar" action="{!Cancel}" />
+      </apex:pageBlockButtons>
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>

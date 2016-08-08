@@ -1,0 +1,92 @@
+<apex:page standardController="Parametro__c" extensions="ParametrosController" tabStyle="Account">
+  <apex:includeScript value="{! $Resource.jQuery }"/>
+  <apex:includeScript value="{! $Resource.maskmoney }"></apex:includeScript>
+  <script src="../../soap/ajax/36.0/connection.js" type="text/javascript">
+   </script>
+  <!-- Page Header -->
+  <apex:sectionHeader title="Parametro" subtitle="Novo Parâmetro" rendered="{!Parametro__c.Name == ''}" />
+  <apex:sectionHeader title="Parametro" subtitle="Editar Parâmetro" rendered="{!Parametro__c.Name != ''}" />
+  <!-- Begin Form -->
+  <apex:form >
+     <apex:messages style="color:red"/> 
+    <apex:pageBlock title="Editar Parâmetro" mode="edit" id="myblock">
+      <!-- Fields -->
+      <apex:pageBlockSection columns="1" showHeader="true" title="Informações">
+        <apex:inputField value="{!Parametro__c.Fluxo__c}" style="width:300px" />
+        <apex:inputField value="{!Parametro__c.Name}" styleClass="tarjaVermelha" id="nome" style="width:300px" />
+        <apex:inputField value="{!Parametro__c.Linha__c}" styleClass="tarjaVermelha numero" style="width:300px"/>
+        <apex:inputField value="{!Parametro__c.Coluna__c}" styleClass="tarjaVermelha" style="width:304px"/>
+        <apex:inputField value="{!Parametro__c.Altura__c}" styleClass="tarjaVermelha numero" style="width:300px"/>
+        <apex:inputField value="{!Parametro__c.Largura__c}" styleClass="tarjaVermelha" style="width:304px"/>
+        <apex:inputField value="{!Parametro__c.Pergunta__c}" styleClass="tarjaVermelha" id="pergunta" style="width:298px"/>
+        <apex:inputField value="{!Parametro__c.Tipo__c}" styleClass="tarjaVermelha" style="width:304px" id="tipoCampo" onchange="MudarTipoParametro()" />
+        <apex:inputField value="{!Parametro__c.TipoDados__c}" style="width:304px" id="tipoDados" onchange="MudarTipoParametro()" />
+        <apex:inputField value="{!Parametro__c.OpcaoPadrao__c}" id="valorPadrao" style="width:300px" rendered="{! !IsCheck}"/>
+        <apex:inputCheckbox value="{!Parametro__c.OpcaoPadrao__c}" style="width:300px" rendered="{!IsCheck}"/>
+        <apex:actionFunction action="{!MudarTipoResposta}" name="MudarTipoParametro" rerender="myblock" />
+        <script type="text/javascript">
+        	$( document ).ready(function() {
+                if("{!Parametro__c.TipoDados__c}" === 'Inteiro')
+                {
+                    $(document.getElementById('{!$Component.valorPadrao}'))
+                    .maskMoney({ showSymbol: false, symbol: "", 
+                                decimal: ",", thousands: "", precision:0});
+                }
+                
+                document.getElementById('{!$Component.tipoDados}').remove(0);
+                
+                if("{!Parametro__c.TipoDados__c}" === 'Decimal') 
+                {
+                    $(document.getElementById('{!$Component.valorPadrao}'))
+                    .maskMoney({ showSymbol: false, symbol: "", decimal: ",", thousands: "", precision:2 });
+                }
+                                 
+                addRequiredLineToObj();
+                
+                $( ".numero" ).maskMoney({ showSymbol: false, symbol: "", 
+                                       decimal: ",", thousands: "", precision:0});
+                
+                $( ".decimal" ).maskMoney({ showSymbol: false, symbol: "", decimal: ",", thousands: "", precision:2 });
+                
+                $( ".numero" ).attr('maxlength',"2");
+                $( ".numero" ).removeAttr('type',"");
+                $( ".numero" ).attr('type',"number");
+                
+                $(document.getElementById('{!$Component.nome}') ).blur(function() {
+                   $(this).val($(this).val().trim().replace(/\ /g,'_').replace(/[^\w\s]/gi, '_'));
+                });
+          	});
+          
+          	
+          
+          	function addRequiredLineToObj()
+            {
+                 $( ".tarjaVermelha" ).each(function( i ) {
+                    var e = $('<div class = "requiredInput"><div class = "requiredBlock"></div> </div>');
+                    e.append($(this).clone());
+                    $(this).before(e);
+                    $(this).remove();
+                  });
+            }
+        </script>
+      </apex:pageBlockSection>
+        <apex:pageBlockSection columns="1" showHeader="true" title="Opções da resposta" rendered="{!IsMultiplo}">
+          <apex:commandButton value="Inserir opção" action="{!AdicionarOpcao}" rerender="myblock" />
+ 
+          <apex:pageBlockTable value="{!opcoes}" var="opt">
+              <apex:column headerValue="Sequência"><apex:outputLabel >{!opt.Sequencia__c}</apex:outputLabel></apex:column>
+              <apex:column headerValue="Descrição"><apex:inputField value="{!opt.Name}" styleClass="tarjaVermelha" id="nome" style="width:300px"/></apex:column>
+              <apex:column headerValue="Valor"><apex:inputField value="{!opt.Valor__c}" styleClass="{! if(Parametro__c.TipoDados__c == 'Inteiro', 'numero', if(Parametro__c.TipoDados__c == 'Decimal', 'decimal',''))} tarjaVermelha" style="width:300px"/></apex:column>
+              <apex:column headerValue="Ação"><apex:commandButton value="Remover" action="{!RemoverOpcao}" rerender="myblock">
+                                <apex:param name="opcaoARemover" value="{!opt.Sequencia__c}" assignTo="{!opcaoARemover}"></apex:param>
+                             </apex:commandButton></apex:column>
+          </apex:pageBlockTable>
+      </apex:pageBlockSection>
+      <!-- Button Section -->
+      <apex:pageBlockButtons location="bottom">
+        <apex:commandButton value="Salvar" action="{!Salvar}" />
+        <apex:commandButton value="Cancelar" action="{!Cancel}" />
+      </apex:pageBlockButtons>
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>

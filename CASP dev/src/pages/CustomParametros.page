@@ -1,0 +1,87 @@
+<apex:page standardController="CodigoFonte__c">
+	<apex:includeScript value="{! $Resource.jquery }"></apex:includeScript>
+	<apex:includeScript value="{! $Resource.highlight }"></apex:includeScript>
+	<apex:stylesheet value="{! $Resource.highlightVS}"/>
+	
+	<apex:sectionHeader title="Código Fonte" subtitle="Editar Código Fonte" rendered="{!if(CodigoFonte__c.Name != '',true, false)}"/>
+	<apex:sectionHeader title="Código Fonte" subtitle="Novo Código Fonte" rendered="{!if(CodigoFonte__c.Name == '',true, false)}"/>
+	<style type='text/css'>
+	   textarea {
+		    white-space: nowrap;
+		    overflow:    scroll;
+		    overflow-y:  hidden;
+		    overflow-x:  scroll;
+		    overflow:    -moz-scrollbars-horizontal;
+		   }
+   </style>
+	<apex:form id="frm1">
+		<apex:pageBlock title="Código" mode="edit" >
+	        <apex:pageBlockSection columns="1" showHeader="true" title="Informações"  >
+	        	<apex:messages style="color:red"/>
+	            <apex:pageBlockSectionItem rendered="{!if(CodigoFonte__c.Fluxo__c != null && CodigoFonte__c.Fluxo__c != '', true, false)}">
+		          	<apex:outputLabel >Fluxo</apex:outputLabel>
+		        	<apex:inputField value="{!CodigoFonte__c.Fluxo__c}" required="true" style="width:300px" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!if(CodigoFonte__c.Parametro__c != null && CodigoFonte__c.Parametro__c != '', true, false)}">
+		          	<apex:outputLabel >Parâmetro</apex:outputLabel>
+		        	<apex:inputField value="{!CodigoFonte__c.Parametro__c}" required="true" style="width:300px" />
+		        </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="Nome">
+			        <apex:outputLabel >Nome</apex:outputLabel>
+		        	<apex:inputField value="{!CodigoFonte__c.Name}" required="true" id="nomePad" style="width:500px" />
+				 </apex:pageBlockSectionItem>
+		         <apex:pageBlockSectionItem id="block">
+			        <apex:outputLabel >Código</apex:outputLabel>
+		        	<apex:inputTextarea rows="10" required="true" value="{!CodigoFonte__c.Codigo__c}" id="valorPadrao" style="width:500px" />
+				 </apex:pageBlockSectionItem>
+	        	<div id='texto' >
+					<pre><code style="font-size:16px" class="cs" id = 'conteudo'></code></pre>
+				</div>
+	    		<script type="text/javascript">
+	    			var dialogId= document.getElementById('{!$Component.block.valorPadrao}');
+	    			
+	    			function DisplayBlock()
+					{
+						$("#conteudo").html($(dialogId).val().replaceAll('<', '&lt;').replaceAll('>', '&gt;'));
+						print();
+					}
+                
+                String.prototype.replaceAll = function(de, para){
+                    var str = this;
+                    var pos = str.indexOf(de);   
+            
+                     while (pos > -1){
+                        str = str.replace(de, para);
+                        pos = str.indexOf(de);
+                    }
+            
+                 return (str);
+            
+                }
+					
+					$(document).ready(function() {
+					
+						$(dialogId).keyup(function() {
+							DisplayBlock();
+						});
+					    DisplayBlock();
+					});
+					
+					function print()
+					{
+						$('pre code').each(function(i, block) {
+							hljs.highlightBlock(block);
+						  });
+					}
+                
+		        </script>
+	        
+	        
+	        </apex:pageBlockSection>
+	        <apex:pageBlockButtons location="bottom">
+				<apex:commandButton value="Salvar" action="{!Save}" />
+		        <apex:commandButton value="Cancelar" action="{!Cancel}" />
+		    </apex:pageBlockButtons>
+        </apex:pageBlock>
+	</apex:form>
+</apex:page>
