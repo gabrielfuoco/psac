@@ -1,0 +1,12 @@
+<apex:page standardcontroller="Amostra__c" showHeader="false" sidebar="false">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {  
+            $("th.actionColumn").hide();
+            $("td.actionColumn").hide();
+            $("div.pbHeader").hide();
+        }); 
+    </script>
+
+    <apex:relatedList list="ProcessSteps"></apex:relatedList>
+</apex:page>

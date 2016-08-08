@@ -1,0 +1,7 @@
+<apex:page >
+    <apex:form >
+        <apex:pageBlock title="Visualizar Check-Ins">
+            <apex:iframe src="/apex/VisualizarMapa" scrolling="false" id="frame" frameBorder="false"/>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

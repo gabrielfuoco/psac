@@ -1,0 +1,137 @@
+<apex:page controller="VisualizarMapaController" showheader="false" sidebar="false" doctype="html-5.0">
+<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" />
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<html>
+ <apex:form id="formId">
+        <body>
+        <style>
+        .dateFormat{display:none;}
+        .secondaryPalette{height:500px;}
+        </style>
+            <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvmB-Iiut3rCFwWrvTKooa6H88GAw4rWs&sensor=false"></script>
+ 		<script type="text/javascript">
+                
+            var markers = JSON.parse('{!jsonString}');
+            var conlat;
+            var conlang
+            var mapone;
+            var latlng;
+            function initialize () {
+               // latlng = new google.maps.LatLng(39.1135216,-94.6268234);
+                var mapOptions = {
+                    zoom: 0,
+                    center: latlng,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    
+                };
+                var map = new google.maps.Map(document.getElementById("dvMap"), mapOptions);
+                mapone = map;
+                
+                displaymap();
+            }
+            function displaymap(){
+                var rows = document.getElementsByName('checkbox[]');
+                latlng = new google.maps.LatLng({!lat},{!lon});
+                var mapOptions = {
+                    //incremento do focus
+                    zoom: 7,
+                    center: latlng,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    
+                };
+                var map = new google.maps.Map(document.getElementById("dvMap"), mapOptions);
+                mapone = map;
+                
+                var infoWindow = new google.maps.InfoWindow();
+                var latlngbounds = new google.maps.LatLngBounds();
+                
+                for (i = 0; i < markers.length; i++) {
+                    
+                    var data = markers[i];
+                    var myLatlng = new google.maps.LatLng(data.lat, data.lng);
+                    var icon = "https://maps.gstatic.com/mapfiles/ms2/micons/red.png";
+                    
+                    
+                    var marker = new google.maps.Marker({
+                        position: myLatlng,
+                        map: mapone,
+                        title:data.Name,
+                        icon: new google.maps.MarkerImage(icon)
+                    });
+                    
+                    (function (marker, data) {
+                        google.maps.event.addListener(marker, "click", function (e) {
+                           
+                           // Dados do pininho no mapa
+                            infoWindow.setContent("<B>Nome da Conta : "+data.accountName + "<br/>Data do Check-In : " + data.checkInDate +"<br/> Criado Por: :" + data.createdBy);
+                            
+                            infoWindow.open(mapone, marker);
+                        });
+                    })(marker, data);
+                    
+                    console.log('marker.position :: '+marker.position);
+                    latlngbounds.extend(marker.position);
+                    console.log('latlngbounds :: '+latlngbounds);
+                    
+                };
+                
+                mapone.fitBounds(latlng);
+                
+            }
+            
+            google.maps.event.addDomListener(window,'load', initialize);
+            
+            </script>
+            
+        </body>
+         <div class="container-fluid">
+                <div class="col-sm-4" style="padding-top:20px">
+                    <apex:pageblock >
+            <apex:pageBlockSection columns="1">
+                
+                    <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Data de Início"></apex:outputLabel>
+                    <apex:inputField value="{!regLoc.DtCheckIn__c}"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Data Final"></apex:outputLabel>
+                    <apex:inputField value="{!regLoc.DtCheckOut__c}"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Usuário" id="user"></apex:outputLabel>
+                    <apex:selectList size="1" value="{!selectedUser}">
+                        <apex:selectOptions value="{!userList}"/>
+                         <apex:actionSupport event="onchange" action="{!onUserChange}" reRender="formId"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageblockSectionItem ></apex:pageblockSectionItem>
+                                
+                   <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Contas"></apex:outputLabel>
+                        <apex:selectList size="1" value="{!selectedAcc}">
+                            <apex:selectOptions value="{!accList}"/>
+                        </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel >
+                    <apex:inputCheckbox value="{!allAcc}"/> Todas as Contas
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+		<apex:pageBlockButtons >
+                <apex:commandButton value="Exibir no Mapa" action="{!onSearchClick}" />
+		</apex:pageBlockButtons> 
+        </apex:pageblock>
+ </div>
+                 <apex:outputPanel id="mapBlock">
+                <div class="col-sm-8" style="padding-top:20px">
+                    <div id="dvMap" style="height: 500px" class="col-sm-12">
+                    </div>
+                </div>
+                </apex:outputPanel>
+            </div>
+            
+</apex:form>
+  </html>
+</apex:page>

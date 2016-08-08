@@ -1,0 +1,80 @@
+<apex:page id="page" standardcontroller="Amostra__c" extensions="solicitacaoAmostraControllerExtension" >
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {  
+        	renderizaSemActions();
+        }); 
+        
+        function renderizaSemActions() {
+            //$('div[id$=Steps1e2]').find('td.pbButton').hide();
+            //$('div[id$=Steps1e2]').find('div.pbHeader').css({"padding": "5px 0"});
+            
+            $('div[id$=Step3]').find('th.actionColumn').hide();
+        	$('div[id$=Step3]').find('td.actionColumn').hide();
+            //$('div[id$=Step3]').find('td.pbButton').hide();
+            //$('div[id$=Step3]').find('div.pbHeader').css({"padding": "5px 0"});
+            
+            //$('.pShowMore').find('a')[0].click(function(){ renderizaSemActions(); })
+        };
+    </script>
+
+    <apex:sectionheader title="Detalhes da {!$ObjectType.Amostra__c.label}" subtitle="{!Amostra__c.Name}"/>
+    <chatter:feedwithfollowers entityId="{!Amostra__c.Id}"/>
+
+    <apex:form id="form">
+		<apex:pageMessages id="exibirMsg" />
+        
+        <apex:pageblock mode="maindetail" title="Detalhes da {!$ObjectType.Amostra__c.label}">
+            
+            <apex:pageblockbuttons >
+                <apex:commandButton action="{!solicitarAmostra}" id="reqAmostra" value="Solicitar Amostra" rendered="{!Amostra__c.SolicitarAprovacao__c}" reRender="form, output" onComplete="renderizaSemActions()"/>
+                <apex:commandbutton value="Editar" action="{!Edit}" rendered="{!Amostra__c.PermiteExclusao__c}"/>
+                <apex:commandbutton value="Excluir" action="{!Delete}" rendered="{!Amostra__c.PermiteExclusao__c}"/>
+                <apex:commandButton action="{!URLFOR($Action.Amostra__c.Aprovar, Id)}" id="aprovar" value="Aprovar" rendered="{!Amostra__c.UltimaAprovacao__c}" reRender="form, output"/>
+                <apex:commandButton action="{!URLFOR($Action.Amostra__c.ReprovarSolicitacaoAmostra, Id)}" id="Reprovar" value="Reprovar" rendered="{!Amostra__c.UltimaAprovacao__c}" reRender="form, output"/>
+         	</apex:pageblockbuttons>
+
+			<apex:outputpanel >
+                <apex:pageblocksection title="Informações" showheader="false" collapsible="false" columns="2">
+                    <apex:outputfield value="{!Amostra__c.NomeProduto__c}"/>
+                    <apex:outputfield value="{!Amostra__c.OwnerId}"/>
+                    <apex:outputfield value="{!Amostra__c.Observacao__c}"/>
+                    <apex:outputfield value="{!Amostra__c.Quantidade__c}"/>
+                    <apex:outputfield value="{!Amostra__c.Data_Maxima_de_Entrega__c}"/>
+                    <apex:outputfield value="{!Amostra__c.QuantidadeRestante__c}"/>
+                </apex:pageblocksection>
+                
+                <apex:pageblocksection title="Aprovação" showheader="true" collapsible="true" columns="2">
+                    <apex:outputfield value="{!Amostra__c.StatusFormula__c}"/>
+                    <apex:outputfield value="{!Amostra__c.DataEntregaFormula__c}"/>
+                    <apex:pageblocksectionitem />
+                    <apex:outputfield value="{!Amostra__c.ValorAmostraFormula__c}"/>
+                </apex:pageblocksection>
+                
+                <apex:pageblocksection title="Informações do sistema" showheader="true" collapsible="true" columns="2">
+                    <apex:pageblocksectionitem >
+                        <apex:outputlabel value="Criado por"/>
+                        <apex:outputpanel >
+                            <apex:outputfield value="{!Amostra__c.CreatedById}"/>&nbsp;, 
+                            <apex:outputfield value="{!Amostra__c.CreatedDate}"/>
+                        </apex:outputpanel>
+                    </apex:pageblocksectionitem>
+                    <apex:pageblocksectionitem >
+                        <apex:outputlabel value="Última modificação feita por"/>
+                        <apex:outputpanel >
+                            <apex:outputfield value="{!Amostra__c.LastModifiedById}"/>&nbsp;, 
+                            <apex:outputfield value="{!Amostra__c.LastModifiedDate}"/>
+                        </apex:outputpanel>
+                    </apex:pageblocksectionitem>
+                </apex:pageblocksection>
+            </apex:outputpanel>
+            
+		</apex:pageblock>        
+	</apex:form>
+    
+	<apex:outputpanel >
+		<apex:relatedList id="Steps1e2" list="ProcessSteps" rendered="{!Amostra__c.EnviadoParaAprovacao__c}" ></apex:relatedList>
+        <apex:relatedList id="Step3" list="ProcessSteps" rendered="{!Amostra__c.UltimaAprovacao__c}" ></apex:relatedList>
+        <apex:include pageName="historicoAprovacao" id="historicoCustom"/>
+    </apex:outputpanel>
+</apex:page>

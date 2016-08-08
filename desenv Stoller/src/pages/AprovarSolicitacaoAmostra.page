@@ -1,0 +1,16 @@
+<apex:page standardController="Amostra__c" extensions="solicitacaoAmostraControllerExtension" >
+    <apex:form >
+        <apex:pageBlock title="Aprovar Amostra {!Amostra__c.Name}">
+            <apex:pageMessages />
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Aprovar" action="{!aprovar}"/>
+                <apex:commandButton value="Cancelar" action="{!cancelar}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="1">
+                <apex:inputField value="{!Amostra__c.CurrencyIsoCode}" required="true"/>
+                <apex:inputField value="{!Amostra__c.ValorAmostra__c}"  required="true"/>
+                <apex:inputField value="{!Amostra__c.DataEntrega__c}" required="true"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

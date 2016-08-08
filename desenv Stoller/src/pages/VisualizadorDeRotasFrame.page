@@ -1,0 +1,7 @@
+<apex:page >
+    <apex:form >
+        <apex:pageBlock title="Visualizador de Rotas">
+            <apex:iframe src="https://c.cs41.visual.force.com/apex/VisualizadorDeRotas" scrolling="false" id="theIframe"/>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

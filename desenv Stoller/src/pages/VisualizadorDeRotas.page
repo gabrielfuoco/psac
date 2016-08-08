@@ -1,0 +1,409 @@
+<apex:page docType="html-5.0" controller="RotasController" showHeader="false" sidebar="false" standardStylesheets="false">
+
+<apex:stylesheet value="{!URLFOR($Resource.Bootstrap, 'Bootstrap/css/bootstrap.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/css/bootstrap-datepicker.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/css/bootstrap-select.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/css/sol.css')}"/>
+
+<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"/>
+<apex:includeScript value="{!URLFOR($Resource.Bootstrap, 'Bootstrap/js/bootstrap.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/js/bootstrap-datepicker.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/locales/bootstrap-datepicker.pt-BR.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/js/bootstrap-select.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ScriptsRotas, 'ScriptsRotas/js/sol.js')}"/>
+
+<apex:includeScript loadOnReady="true" value="https://maps.googleapis.com/maps/api/js?key=AIzaSyBbSYosr0OPGpb2LIEf6my8O2xGzvcK-C0&callback=initMap"/>
+
+
+<html>
+<head>
+    <title>Planejar Rotas</title>
+        
+    <script type="text/javascript">
+        
+        $(function() {
+            //Não é mais utilizado 
+            $('#dataCompromisso-old').datepicker({
+                clearBtn: true,
+                language: "pt-BR",
+                keyboardNavigation: true,
+                autoclose: true,
+                todayHighlight: true,
+                toggleActive: true
+            });
+        });
+        
+        $('body').on({
+            'mousewheel': function(e) {
+                if (e.target.id == 'el') return;
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        })
+    </script>
+    
+    <script>
+        function initMap() {
+            var directionsService = new google.maps.DirectionsService;
+            var directionsDisplay = new google.maps.DirectionsRenderer;
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 5,
+                center: {lat: -15.7217174, lng: -48.0783243}
+            });
+            directionsDisplay.setMap(map);
+
+            document.getElementById('submit').addEventListener('click', function() {
+                calculateAndDisplayRoute(directionsService, directionsDisplay);
+            });
+        }
+
+        function calculateAndDisplayRoute(directionsService, directionsDisplay) {
+            var waypts = [];
+            var checkboxArray = document.getElementById('waypoints');
+            for (var i = 0; i < checkboxArray.length; i++) {
+                if (checkboxArray.options[i].selected) {
+                    waypts.push({
+                        location: checkboxArray[i].value.split(":")[1],
+                        stopover: true
+                    });
+                }
+            }
+            
+            var inicio = waypts[0].location;
+            var final = waypts[waypts.length-1].location;
+            var paradas = [];
+            var k = 0;
+            for (var j = 0; j < waypts.length; j++) {
+                if(waypts.length > 2 && j > 0 && j < waypts.length-1) {
+                    paradas[k] = waypts[j];
+                    k++;
+                }
+            }
+
+            directionsService.route({
+                origin: inicio,
+                destination: final,
+                waypoints: paradas,
+                optimizeWaypoints: true,
+                travelMode: google.maps.TravelMode.DRIVING
+            }, function(response, status) {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsDisplay.setDirections(response);
+                    var route = response.routes[0];
+                    var summaryPanel = document.getElementById('directions-panel');
+                    summaryPanel.innerHTML = '';
+                    // For each route, display summary information.
+                    for (var i = 0; i < route.legs.length; i++) {
+                        var routeSegment = i + 1;
+                        summaryPanel.innerHTML += '<b>Segmento da Rota: ' + routeSegment +
+                        '</b><br>';
+                        summaryPanel.innerHTML += route.legs[i].start_address + ' para ';
+                        summaryPanel.innerHTML += route.legs[i].end_address + '<br>';
+                        summaryPanel.innerHTML += route.legs[i].distance.text + '<br><br>';
+                    }
+                } else {
+                    window.alert('Solicitação de rota falhou devido a' + status);
+                }
+            });
+            
+            abrirRotaGoogleApp();
+        }
+    </script>
+    
+    <style type="text/css">
+        html {
+            height: auto !important;
+        }
+        
+        body {
+            background-color: #f8f8f8;
+        }
+        
+        #right-panel {
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+        }
+        
+        #right-panel select, #right-panel input {
+            font-size: 15px;
+            border-color: #ccc;
+        }
+        
+        #right-panel select {
+            width: 100%;
+            border-radius: 4px;
+            border-color: #ccc;
+        }
+        
+        #right-panel i {
+            font-size: 12px;
+        }
+        
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #map {
+            height: 100%;
+            border-radius: 4px;
+            border-color: #ccc;
+        }
+        
+        #directions-panel {
+            padding-top: 20px;
+        }
+        
+        #directions {
+            background: #d4d4d4;
+            display: none;
+        }
+        .bootstrap-select {
+            width: 100% !important;
+        }
+        
+        option {
+            padding: 5px 10px;
+        }
+        
+        .container-fluid {
+            margin: 20px 0;
+            padding-right: 0;
+            padding-left: 0;
+        }
+        
+        .Flexible-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            padding-top: 30px;
+            height: 0;
+            overflow: hidden;
+        }
+        
+        .Flexible-container iframe,
+        .Flexible-container object,
+        .Flexible-container embed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sol-inner-container {
+            height: 35px;
+            line-height: 35px;
+        }
+        
+        .sol-label-text {
+            line-height: 1.5em;
+        }
+        
+        .sol-checkbox {
+            top: 0px;
+        }
+        
+        .hide {
+            display: none;
+        }
+        
+        button.btn.dropdown-toggle.btn-default {
+            height: 30px;
+        }
+        
+        .btn-group>.btn:first-child:not(:last-child):not(.dropdown-toggle) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            width: 50%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        ul.dropdown-menu li {
+            padding: 5px 0;
+            margin: 0;
+        }
+        
+        .bootstrap-select.btn-group .dropdown-toggle .filter-option {
+            margin-left: 10px;
+        }
+        
+        .bootstrap-select.btn-group.show-tick .dropdown-menu li.selected a span.check-mark {
+            margin-top: 9px;
+        }
+        
+        p.linkMap{
+            text-align: right;
+            margin-right: 15px;
+            display: none;
+        }
+        
+        p.linkMapObs {
+            font-size: 10px;
+            font-style: italic;
+            top: -20px;
+            position: relative;
+            display: none;
+        }
+        
+        #dataCompromisso {
+            width: 45%;
+            float: left;
+            position: absolute;
+            top: 55px;
+            height: 35px;
+        }
+        
+        #btnPesquisar {
+            width: 40%;
+            float: right;
+            position: relative;
+            top: 39px;
+            height: 35px;
+        }
+        
+        select#waypoints {
+            background-color: white;
+        }
+        
+        .alert-warning {
+            margin: 15px 15px 0;
+        }
+        
+        @media(max-width:767px){
+            select#waypoints {
+                height: 35px;
+            }
+        }
+        @media(min-width:768px){
+
+        }
+        @media(min-width:992px){
+        
+        }
+        @media(min-width:1200px){
+        
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="col-xs-12 col-sm-3" id="right-panel">
+            <div class="panel panel-default">
+                <div class="panel-body" style="height: 90px;">
+                    <b>Data da Visita:</b>
+                    <input type="date" class="form-control" id="dataCompromisso" />
+                    <button type="button" id="btnPesquisar" class="btn btn-primary" onclick="myJavascriptFunc()">Pesquisar</button>
+                </div>
+                
+                <apex:form id="view">
+                    <p id="jsonData" class="hide"><apex:outputText value="{!jsonData}" id="showstate" /></p>
+                    <div id="msgSF" class="hide alert alert-warning" role="alert"><apex:outputText value="{!message}" /></div>
+
+                    <apex:actionFunction name="CallApexMethod" action="{!listarCompromissos}" rerender="view" onComplete="myFunction() ;">       
+                        <apex:param id="var1" name="var1" assignTo="{!ano}" value="" />
+                        <apex:param id="var2" name="var2" assignTo="{!mes}" value="" />
+                        <apex:param id="var3" name="var3" assignTo="{!dia}" value="" />
+                    </apex:actionFunction>
+                </apex:form>
+
+                <div class="panel-body">
+                    <p><b>Clientes:</b></p>
+                    <select multiple="multiple" id="waypoints" data-native-menu="false"></select>                 
+                    
+                </div>
+
+                <div class="panel-body">
+                    <input type="submit" class="btn btn-primary btn-lg btn-block" id="submit" disabled="disabled" value="Visualizar Rota"/>
+                </div>
+                <div>
+                    <p class="linkMap"><a href="" id="gMaps" target="_blank">Abrir no Google Maps*</a></p>
+                </div>
+            </div>
+            <p class="linkMapObs">*Disponível apenas para Android.</p>
+            <div class="panel panel-default" id="directions">
+                <div class="panel-body">
+                    <div id="directions-panel"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xs-12 col-sm-9">
+            <div class="Flexible-container" id="map"></div>
+        </div>
+    </div>
+    
+    <script>
+        $("input#dataCompromisso").change(function(){
+            $('#waypoints option[value!=""]').remove();
+            document.getElementById("waypoints").setAttribute("disabled", "disabled");
+            document.getElementById("submit").setAttribute("disabled", "disabled");
+            $("#msgSF").addClass("hide");
+            initMap();
+        }); 
+               
+        function myFunction() {
+            
+            $('#waypoints option[value!="0"]').remove();
+                        
+            var selector = document.getElementById("waypoints");
+            
+            var rotas = JSON.parse($('#jsonData').children().text());
+            
+            if (rotas.length > 0) {
+                for (var i=0; i<=rotas.length-1; i++) {
+                    var nome = rotas[i].contaNome + ' - Horário: ' +rotas[i].dataHora;
+                    var ender = i + ":" + rotas[i].endRua + ' ' + rotas[i].endCidade + ' ' + rotas[i].endEstado + ' ' + rotas[i].endCep;
+                    selector.options[i] = new Option(nome, ender);
+                }
+                
+                document.getElementById("waypoints").removeAttribute("disabled", "disabled");
+                document.getElementById("submit").removeAttribute("disabled", "disabled");
+                    
+                $("p.linkMap").css("display", "none");
+                $("p.linkMapObs").css("display", "none");
+            }
+            else {
+                document.getElementById("waypoints").setAttribute("disabled", "disabled");
+                document.getElementById("submit").setAttribute("disabled", "disabled");
+                $("#msgSF").removeClass("hide");
+            }
+        }
+        
+        function abrirRotaGoogleApp() {
+            $("p.linkMap").css("display", "block");
+            $("p.linkMapObs").css("display", "block");
+            
+            var rotas = JSON.parse($('#jsonData').children().text());
+            var linkMaps = document.getElementById('gMaps');
+            var url = "https://www.google.com/maps/dir/Current+Location/";
+                    
+            var checkboxArray = document.getElementById('waypoints');
+            for (var i = 0; i < checkboxArray.length; i++) {
+                if (checkboxArray.options[i].selected) {
+                    var ender = checkboxArray[i].value.split(":")[1] + '/';
+                    url = url + ender;
+                }
+            }
+            
+            linkMaps.href = url;
+        }
+
+        function myJavascriptFunc() {
+            var dataCompleta = document.getElementById("dataCompromisso").value;
+            
+            if (dataCompleta != "") {  
+                var ano = dataCompleta.substring(0, 4);
+                var mes = dataCompleta.substring(5, 7);
+                var dia = dataCompleta.substring(8, 10);
+        
+                CallApexMethod(ano, mes, dia);
+            }
+        }
+    </script>
+</body>
+</html>
+
+</apex:page>
